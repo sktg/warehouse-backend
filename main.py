@@ -12,11 +12,10 @@ model_columns = joblib.load("model_columns.pkl")
 
 app = FastAPI() # 👈 THIS MUST COME BEFORE add_middleware
 
+#changed CORS policy to allow vercel domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "https://warehouse-frontend-pkyieu28-sktgs-projects.vercel.app"
-    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
