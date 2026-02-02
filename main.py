@@ -14,8 +14,10 @@ app = FastAPI() # 👈 THIS MUST COME BEFORE add_middleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+    "https://warehouse-frontend-pkyieu28-sktgs-projects.vercel.app"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
