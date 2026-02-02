@@ -137,10 +137,9 @@ def create_order(req: OrderRequest):
         num_tasks = random.randint(1, 3)
         products = db.query(Product).all()
 
-# ✅ SAFETY — prevents crash when DB is empty on Render
-if not products:
-    return {"error": "No products found in database. Seed data missing."}
-
+        # ✅ SAFETY — prevents crash when DB is empty on Render
+        if not products:
+            return {"error": "No products found in database. Seed data missing."}
 
         for i in range(num_tasks):
             product = random.choice(products)
