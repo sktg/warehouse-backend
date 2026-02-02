@@ -36,6 +36,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi import Request
+
+@app.options("/{full_path:path}")
+async def options_handler(request: Request, full_path: str):
+    return {}
+
 
 # ---------- Helpers ----------
 def get_next_order_no(db):
