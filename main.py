@@ -7,8 +7,6 @@ import joblib
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
 
-ml_model = joblib.load("task_time_model.pkl")
-model_columns = joblib.load("model_columns.pkl")
 
 app = FastAPI() # 👈 THIS MUST COME BEFORE add_middleware
 
@@ -21,6 +19,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ---- STARTUP INITIALIZATION FOR RENDER ----
+ml_model = None
+model_columns = None
+
+@app.on_event("startup")
+def startup_init():
+    global ml_model, model_columns
+    try:
+        ml_model = joblib.load("task_time_model.pkl")
+        model_columns = joblib.load("model_columns.pkl")
+        Base.metadata.create_all(bind=engine)
+        print("Startup init successful")
+    except Exception as e:
+        print("Startup init failed:", e)
 
 
 
@@ -296,4 +308,5 @@ def refill_bin(bin_code: str):
 
 #the browser is blocking BEFORE preflight.
 # This is executing before CORS middleware is fully applied, and on Render it causes the app to initialize differently.
-Base.metadata.create_all(bind=engine)
+#removed 
+#Base.metadata.create_all(bind=engine)
