@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
+
 
 
 def get_next_order_no(db):
@@ -293,4 +293,6 @@ def refill_bin(bin_code: str):
 
     return {"message": f"{bin_code} refilled by 500"}
 
-
+#the browser is blocking BEFORE preflight.
+# This is executing before CORS middleware is fully applied, and on Render it causes the app to initialize differently.
+Base.metadata.create_all(bind=engine)
