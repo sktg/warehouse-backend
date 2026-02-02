@@ -6,11 +6,26 @@ import random
 import joblib
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 
-app = FastAPI() # 👈 THIS MUST COME BEFORE add_middleware
+ml_model = None
+model_columns = None
 
-#changed CORS policy to allow vercel domains
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global ml_model, model_columns
+    ml_model = joblib.load("task_time_model.pkl")
+    model_columns = joblib.load("model_columns.pkl")
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+# ✅ CREATE APP FIRST
+app = FastAPI(lifespan=lifespan)
+
+# ✅ THEN ADD CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https://.*\.vercel\.app",
@@ -18,23 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ---- STARTUP INITIALIZATION FOR RENDER ----
-ml_model = None
-model_columns = None
-
-@app.on_event("startup")
-def startup_init():
-    global ml_model, model_columns
-    try:
-        ml_model = joblib.load("task_time_model.pkl")
-        model_columns = joblib.load("model_columns.pkl")
-        Base.metadata.create_all(bind=engine)
-        print("Startup init successful")
-    except Exception as e:
-        print("Startup init failed:", e)
-
-
 
 def get_next_order_no(db):
     last = db.query(Order).order_by(Order.id.desc()).first()
