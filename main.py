@@ -17,11 +17,43 @@ model_columns = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global ml_model, model_columns
+
     ml_model = joblib.load("task_time_model.pkl")
     model_columns = joblib.load("model_columns.pkl")
     Base.metadata.create_all(bind=engine)
-    print("Startup successful")
+
+    db = SessionLocal()
+
+    # -------- SEED PRODUCTS --------
+    if db.query(Product).count() == 0:
+        db.add_all([
+            Product(product_name="Item A", product_code="P001", storage_type="ST01", source_bin="BIN-001"),
+            Product(product_name="Item B", product_code="P002", storage_type="ST02", source_bin="BIN-002"),
+            Product(product_name="Item C", product_code="P003", storage_type="ST03", source_bin="BIN-003"),
+        ])
+
+    # -------- SEED RESOURCES --------
+    if db.query(Resource).count() == 0:
+        db.add_all([
+            Resource(resource_code="R1", resource_type="RT01", status="Available"),
+            Resource(resource_code="R2", resource_type="RT02", status="Available"),
+            Resource(resource_code="R3", resource_type="RT03", status="Available"),
+        ])
+
+    # -------- SEED BINS --------
+    if db.query(StorageBin).count() == 0:
+        db.add_all([
+            StorageBin(bin_code="BIN-001", capacity=2000, current_qty=1500),
+            StorageBin(bin_code="BIN-002", capacity=2000, current_qty=1500),
+            StorageBin(bin_code="BIN-003", capacity=2000, current_qty=1500),
+        ])
+
+    db.commit()
+    db.close()
+
+    print("Startup + DB seed successful")
     yield
+
 
 
 app = FastAPI(lifespan=lifespan)
@@ -104,6 +136,11 @@ def create_order(req: OrderRequest):
 
         num_tasks = random.randint(1, 3)
         products = db.query(Product).all()
+
+# ✅ SAFETY — prevents crash when DB is empty on Render
+if not products:
+    return {"error": "No products found in database. Seed data missing."}
+
 
         for i in range(num_tasks):
             product = random.choice(products)
