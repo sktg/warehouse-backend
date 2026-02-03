@@ -36,8 +36,20 @@ async def lifespan(app: FastAPI):
             ("RSG17","RT03"),("RSG18","RT03"),("RSG19","RT03"),
             ("RSG20","RT03"),("RSG21","RT03"),("RSG22","RT03"),
         ]
+        type_map = {
+            "RT01": "Reach Truck",
+            "RT02": "Fast Mover",
+            "RT03": "Pallet Jack"
+        }
+
         for code, rtype in resources:
-            db.add(Resource(resource_code=code, resource_type=rtype, status="Available"))
+            db.add(Resource(
+                resource_code=code,
+                resource_type=rtype,
+                resource_name=type_map[rtype],
+                status="Available"
+            ))
+
 
     # ----------- PRODUCTS -----------
     if db.query(Product).count() == 0:
@@ -427,24 +439,16 @@ def resource_status():
                 Task.status == "ALLOCATED"
             ).first()
 
-            if task:
-                result.append({
-                    "resource": r.resource_code,
-                    "status": "Busy",
-                    "product": task.product_name,
-                    "task_no": task.task_no,
-                    "source_bin": task.source_bin,
-                    "dest_bin": task.dest_bin,
-                })
-            else:
-                result.append({
-                    "resource": r.resource_code,
-                    "status": "Available",
-                    "product": None,
-                    "task_no": None,
-                    "source_bin": None,
-                    "dest_bin": None,
-                })
+            result.append({
+                "resource_code": r.resource_code,
+                "resource_type": r.resource_type,
+                "resource_name": r.resource_name,
+                "status": r.status,
+                "product": task.product_name if task else None,
+                "task_no": task.task_no if task else None,
+                "source_bin": task.source_bin if task else None,
+                "dest_bin": task.dest_bin if task else None,
+            })
 
         return result
     finally:
