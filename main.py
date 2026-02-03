@@ -308,22 +308,60 @@ def confirm_task(task_id: int):
         db.close()
 
 
-# ---------- Read APIs ----------
+# ---------- Read APIs ----------#added priority and rank values
 @app.get("/tasks")
 def get_tasks():
     db = SessionLocal()
     try:
         tasks = db.query(Task).all()
-        return [{
-            "task_id": t.id,
-            "order_no": t.order_no,
-            "product": t.product_name,
-            "qty": t.source_qty,
-            "status": t.status,
-            "allocated_resource": t.allocated_resource
-        } for t in tasks]
+        orders = db.query(Order).all()
+
+        # ---------- Build dynamic order ranking ----------
+        priority_weight = {"P1": 1, "P2": 2, "P3": 3, "P4": 4, "P5": 5}
+
+        order_scores = []
+        for o in orders:
+            open_tasks = db.query(Task).filter(
+                Task.order_no == o.order_no,
+                Task.status == "OPEN"
+            ).count()
+
+            score = (
+                priority_weight.get(o.priority, 5) * 1000
+                + open_tasks * 10
+                + o.id
+            )
+            order_scores.append((o.order_no, score, o.priority))
+
+        # Sort by score → lowest score = highest priority
+        order_scores.sort(key=lambda x: x[1])
+
+        # Map order_no → rank
+        order_rank_map = {}
+        for idx, (order_no, _, pr) in enumerate(order_scores, start=1):
+            order_rank_map[order_no] = (idx, pr)
+
+        # ---------- Build task response ----------
+        result = []
+        for t in tasks:
+            rank, base_pr = order_rank_map.get(t.order_no, ("", ""))
+
+            result.append({
+                "task_id": t.id,
+                "order_no": t.order_no,
+                "product": t.product_name,
+                "qty": t.source_qty,
+                "status": t.status,
+                "allocated_resource": t.allocated_resource,
+                "base_priority": base_pr,
+                "current_rank": rank
+            })
+
+        return result
+
     finally:
         db.close()
+
 
 
 @app.get("/dashboard")
