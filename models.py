@@ -56,10 +56,11 @@ class Task(Base):
 class Resource(Base):
     __tablename__ = "resources"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     resource_code = Column(String, unique=True)
-    resource_type = Column(String)
-    status = Column(String, default="Available")
+    resource_type = Column(String)   # RT01
+    resource_name = Column(String)   # Reach Truck / Fast Mover / Pallet Jack
+    status = Column(String)
 
 
 class Product(Base):
