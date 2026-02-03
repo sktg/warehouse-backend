@@ -131,6 +131,15 @@ def predict_time(resource_code):
     return ml_model.predict(data)[0]
 
 
+def get_priority_score(priority: str):
+    return {
+        "P1": 10000,
+        "P2": 400,
+        "P3": 300,
+        "P4": 200,
+        "P5": 100,
+    }.get(priority, 0)
+
 # ---------- Routes ----------
 @app.get("/")
 def home():
@@ -201,7 +210,29 @@ def create_order(req: OrderRequest):
 def allocate_tasks():
     db = SessionLocal()
     try:
-        open_tasks = db.query(Task).filter(Task.status == "OPEN").all()
+        from datetime import datetime
+
+        open_tasks = (
+            db.query(Task, Order)
+            .join(Order, Task.order_no == Order.order_no)
+            .filter(Task.status == "OPEN")
+            .all()
+        )
+
+        def effective_score(task, order):
+            created = datetime.strptime(
+                order.created_date + " " + order.created_time,
+                "%d-%m-%Y %H:%M:%S"
+            )
+            waiting_minutes = (datetime.now() - created).total_seconds() / 60
+            return get_priority_score(order.priority) + waiting_minutes
+
+        # Sort tasks by dynamic priority
+        open_tasks.sort(key=lambda x: effective_score(x[0], x[1]), reverse=True)
+
+        # Keep only tasks after sorting
+        open_tasks = [t[0] for t in open_tasks]
+
 
         st_to_rt = {"ST01": "RT01", "ST02": "RT02", "ST03": "RT03"}
 
