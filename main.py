@@ -413,3 +413,39 @@ def refill_bin(bin_code: str):
         return {"message": f"{bin_code} refilled"}
     finally:
         db.close()
+
+@app.get("/resource_status")
+def resource_status():
+    db = SessionLocal()
+    try:
+        resources = db.query(Resource).all()
+        result = []
+
+        for r in resources:
+            task = db.query(Task).filter(
+                Task.allocated_resource == r.resource_code,
+                Task.status == "ALLOCATED"
+            ).first()
+
+            if task:
+                result.append({
+                    "resource": r.resource_code,
+                    "status": "Busy",
+                    "product": task.product_name,
+                    "task_no": task.task_no,
+                    "source_bin": task.source_bin,
+                    "dest_bin": task.dest_bin,
+                })
+            else:
+                result.append({
+                    "resource": r.resource_code,
+                    "status": "Available",
+                    "product": None,
+                    "task_no": None,
+                    "source_bin": None,
+                    "dest_bin": None,
+                })
+
+        return result
+    finally:
+        db.close()
