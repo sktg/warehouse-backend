@@ -126,12 +126,14 @@ def create_order(req: OrderRequest):
         )
         db.add(order)
 
-        num_tasks = random.randint(1, 3)
+        num_tasks = random.randint(1, 9)
         products = db.query(Product).all()
 
         # ✅ SAFETY — prevents crash when DB is empty on Render
         if not products:
             return {"error": "No products found in database. Seed data missing."}
+
+        created_tasks = []
 
         for i in range(num_tasks):
             product = random.choice(products)
@@ -155,10 +157,16 @@ def create_order(req: OrderRequest):
                 }[product.storage_type]
             )
 
-        db.add(task)
-        db.flush()  # ⭐ THIS GENERATES task.id from SQLite
+            db.add(task)
+            created_tasks.append(task)
 
-        task.task_no = generate_task_no(task.id)  # ⭐ SET AFTER ID EXISTS
+        # ⭐ Flush ONCE after all tasks are added
+        db.flush()
+
+        # ⭐ Now assign task numbers
+        for task in created_tasks:
+            task.task_no = generate_task_no(task.id)
+
 
 
         db.commit()
