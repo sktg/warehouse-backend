@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from seed_data import seed_database
+from utils import generate_task_no
 ml_model = None
 model_columns = None
 
@@ -140,7 +141,7 @@ def create_order(req: OrderRequest):
 
             task = Task(
                 order_no=order_no,
-                task_no=i+1,
+                task_no=generate_task_no(db),   # ⭐ USE BETTER TASK NO GENERATOR
                 product_name=product.product_name,
                 product_code=product.product_code,
                 storage_type=product.storage_type,
