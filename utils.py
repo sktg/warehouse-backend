@@ -1,13 +1,8 @@
-from sqlalchemy.orm import Session
-from models import Task
+from sqlalchemy import text
 
-def generate_task_no(db: Session):
-    last_task = db.query(Task).order_by(Task.id.desc()).first()
+def generate_task_no(db):
+    next_val = db.execute(
+        text("SELECT nextval('task_no_seq')")
+    ).scalar()
 
-    if not last_task or not last_task.task_no:
-        return "TSK90001"
-
-    last_number = int(last_task.task_no.replace("TSK", ""))
-    next_number = last_number + 1
-
-    return f"TSK{next_number}"
+    return f"TSK{next_val}"

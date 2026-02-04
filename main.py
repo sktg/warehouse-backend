@@ -23,19 +23,24 @@ from models import *  # ensures SQLAlchemy registers all tables
 async def lifespan(app: FastAPI):
     global ml_model, model_columns
 
-    # 1. Load ML artifacts
     ml_model = joblib.load("task_time_model.pkl")
     model_columns = joblib.load("model_columns.pkl")
 
-    # 2. Create all tables
     Base.metadata.create_all(bind=engine)
 
-    # 3. Seed database safely
-    seed_database()
+    # ⭐ ADD THIS
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE SEQUENCE IF NOT EXISTS task_no_seq START 90001;
+        """))
+        conn.commit()
 
-    print("✅ Tables created and DB seeded")
+    seed_database()
+    print("✅ Tables created, sequence created, DB seeded")
 
     yield
+
 
 
 
