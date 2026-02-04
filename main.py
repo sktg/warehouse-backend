@@ -308,6 +308,7 @@ def get_tasks():
 
             result.append({
                 "task_id": t.id,
+                "task_no": t.task_no,   # ⭐ ADD THIS
                 "order_no": t.order_no,
                 "product": t.product_name,
                 "qty": t.source_qty,
