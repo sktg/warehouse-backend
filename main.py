@@ -413,3 +413,37 @@ def resource_status():
         return result
     finally:
         db.close()
+
+@app.get("/resource/{code}")
+def resource_details(code: str):
+    db = SessionLocal()
+    try:
+        tasks = db.query(Task).filter(
+            Task.allocated_resource == code
+        ).order_by(Task.id.desc()).all()
+
+        completed = len([t for t in tasks if t.status == "CONFIRMED"])
+        current_task = next((t for t in tasks if t.status == "ALLOCATED"), None)
+
+        return {
+            "resource_code": code,
+            "total_completed": completed,
+            "current_task": {
+                "task_id": current_task.id,
+                "task_no": current_task.task_no,
+                "product": current_task.product_name,
+                "source_bin": current_task.source_bin,
+                "dest_bin": current_task.dest_bin,
+            } if current_task else None,
+            "history": [
+                {
+                    "task_id": t.id,  
+                    "task_no": t.task_no,
+                    "product": t.product_name,
+                    "qty": t.source_qty,
+                    "status": t.status
+                } for t in tasks
+            ]
+        }
+    finally:
+        db.close()
