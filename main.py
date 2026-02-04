@@ -28,13 +28,7 @@ async def lifespan(app: FastAPI):
 
     Base.metadata.create_all(bind=engine)
 
-    # ⭐ ADD THIS
-    from sqlalchemy import text
-    with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE SEQUENCE IF NOT EXISTS task_no_seq START 90001;
-        """))
-        conn.commit()
+
 
     seed_database()
     print("✅ Tables created, sequence created, DB seeded")
@@ -146,7 +140,6 @@ def create_order(req: OrderRequest):
 
             task = Task(
                 order_no=order_no,
-                task_no=generate_task_no(db),   # ⭐ USE BETTER TASK NO GENERATOR
                 product_name=product.product_name,
                 product_code=product.product_code,
                 storage_type=product.storage_type,
@@ -161,7 +154,12 @@ def create_order(req: OrderRequest):
                     "ST03": "GIZN-003",
                 }[product.storage_type]
             )
-            db.add(task)
+
+        db.add(task)
+        db.flush()  # ⭐ THIS GENERATES task.id from SQLite
+
+        task.task_no = generate_task_no(task.id)  # ⭐ SET AFTER ID EXISTS
+
 
         db.commit()
         return {"message": f"Order {order_no} created"}
