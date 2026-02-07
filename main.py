@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from seed_data import seed_database
 from utils import generate_task_no
+from sqlalchemy import func, case
 ml_model = None
 model_columns = None
 
@@ -414,9 +415,9 @@ def dashboard():
             .join(Task, Task.order_no == Order.order_no)
             .group_by(Order.order_no)
             .having(
-                db.func.count(Task.id) ==
-                db.func.sum(
-                    db.case(
+                func.count(Task.id) ==
+                func.sum(
+                    case(
                         (Task.status == "CONFIRMED", 1),
                         else_=0
                     )
@@ -424,6 +425,8 @@ def dashboard():
             )
             .count()
         )
+
+
 
 
         total_resources = db.query(Resource).count()
