@@ -99,6 +99,65 @@ def get_priority_score(priority: str):
         "P5": 100,
     }.get(priority, 0)
 
+@app.get("/orders")
+def get_orders():
+    db = SessionLocal()
+    try:
+        orders = db.query(Order).all()
+        result = []
+
+        for o in orders:
+            total_items = db.query(Task).filter(
+                Task.order_no == o.order_no
+            ).count()
+
+            completed_items = db.query(Task).filter(
+                Task.order_no == o.order_no,
+                Task.status == "CONFIRMED"
+            ).count()
+
+            result.append({
+                "order_no": o.order_no,
+                "priority": o.priority,
+                "total_items": total_items,
+                "completed_items": completed_items,
+                "raised_time": f"{o.created_date} {o.created_time}",
+                "status": o.status
+            })
+
+        return result
+
+    finally:
+        db.close()
+
+@app.get("/completed_orders")
+def completed_orders():
+    db = SessionLocal()
+    try:
+        orders = db.query(Order).filter(
+            Order.status == "CONFIRMED"
+        ).all()
+
+        result = []
+        for o in orders:
+            total_items = db.query(Task).filter(
+                Task.order_no == o.order_no
+            ).count()
+
+            result.append({
+                "order_no": o.order_no,
+                "priority": o.priority,
+                "total_items": total_items,
+                "completed_items": total_items,
+                "raised_time": f"{o.created_date} {o.created_time}"
+            })
+
+        return result
+
+    finally:
+        db.close()
+
+
 # ---------- Routes ----------
 @app.get("/")
 def home():
