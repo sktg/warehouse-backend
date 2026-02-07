@@ -409,9 +409,22 @@ def dashboard():
         allocated_tasks = db.query(Task).filter(Task.status == "ALLOCATED").count()
         completed_tasks = db.query(Task).filter(Task.status == "CONFIRMED").count()
 
-        completed_orders = db.query(Order).filter(
-            Order.status == "CONFIRMED"
-        ).count()
+        completed_orders = (
+            db.query(Order)
+            .join(Task, Task.order_no == Order.order_no)
+            .group_by(Order.order_no)
+            .having(
+                db.func.count(Task.id) ==
+                db.func.sum(
+                    db.case(
+                        (Task.status == "CONFIRMED", 1),
+                        else_=0
+                    )
+                )
+            )
+            .count()
+        )
+
 
         total_resources = db.query(Resource).count()
         busy_resources = db.query(Resource).filter(Resource.status == "Busy").count()
