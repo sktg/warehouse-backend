@@ -408,6 +408,11 @@ def dashboard():
         open_tasks = db.query(Task).filter(Task.status == "OPEN").count()
         allocated_tasks = db.query(Task).filter(Task.status == "ALLOCATED").count()
         completed_tasks = db.query(Task).filter(Task.status == "CONFIRMED").count()
+
+        completed_orders = db.query(Order).filter(
+            Order.status == "CONFIRMED"
+        ).count()
+
         total_resources = db.query(Resource).count()
         busy_resources = db.query(Resource).filter(Resource.status == "Busy").count()
 
@@ -417,10 +422,12 @@ def dashboard():
             "open_tasks": open_tasks,
             "assigned_tasks": allocated_tasks,
             "completed_tasks": completed_tasks,
+            "completed_orders": completed_orders,   # ⭐ NEW
             "resource_utilization_percent": round(utilization, 2)
         }
     finally:
         db.close()
+
 
 
 @app.get("/bins")
