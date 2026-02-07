@@ -116,19 +116,25 @@ def get_orders():
                 Task.status == "CONFIRMED"
             ).count()
 
+            derived_status = (
+                "CONFIRMED"
+                if completed_items == total_items and total_items > 0
+                else o.status
+            )
+
             result.append({
                 "order_no": o.order_no,
                 "priority": o.priority,
                 "total_items": total_items,
                 "completed_items": completed_items,
                 "raised_time": f"{o.created_date} {o.created_time}",
-                "status": o.status
+                "status": derived_status
             })
 
         return result
-
     finally:
         db.close()
+
 
 @app.get("/completed_orders")
 def completed_orders():
